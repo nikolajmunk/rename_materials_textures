@@ -49,7 +49,7 @@ def main(context, rename_materials=False, rename_textures=False):
     def filenumber_string(number, length, leading_underscore=True):
         filenumber = ''
         if number >= 0:
-            filenumber = ('_' if leading_underscore else '') + str(filenumber).zfill(length)
+            filenumber = ('_' if leading_underscore else '') + str(number).zfill(length)
         return filenumber
 
     def get_appendix(node, appendices, leading_underscore='TRUE'):
@@ -88,13 +88,15 @@ def main(context, rename_materials=False, rename_textures=False):
     renamed_materials = []
     renamed_images = []
     for obj in context.selected_objects:
+        material_count = 0
         for s in obj.material_slots:
             if s.material and s.material.use_nodes:
                 print('Material name:', s.material.name)
                 print('')
                 if rename_materials:
-                    rename_material(material=s.material, name=obj.name, filenumber=len(renamed_materials))
+                    rename_material(material=s.material, name=obj.name, filenumber=material_count)
                     renamed_materials.append(s.material)
+                    material_count += 1
                 misc_images = []
                 for n in s.material.node_tree.nodes:
                     if n.type == 'TEX_IMAGE' and rename_textures:
@@ -148,7 +150,7 @@ class RenameTexture(bpy.types.Operator):
 class RenameMaterialAndTexture(bpy.types.Operator):
     """Rename materials in selected objects based on object name, then rename materials' textures based on material name"""
     bl_idname = "file.rename_material_texture"
-    bl_label = "Rename Both Material(s) & Texture(s)"
+    bl_label = "Rename Both Material(s) and Texture(s)"
 
     @classmethod
     def poll(cls, context):
@@ -174,7 +176,7 @@ class RenameMaterialTextureMenu(bpy.types.Menu):
 
 def menu_func_showmenu(self, _context):
     self.layout.separator()
-    self.layout.menu(RenameMaterialTextureMenu.bl_idname, text="Rename Materials/Packed Textures")
+    self.layout.menu(RenameMaterialTextureMenu.bl_idname, text="Rename Materials/Textures")
 
 
 classes = (
