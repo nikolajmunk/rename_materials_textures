@@ -42,7 +42,7 @@ def print_begin(source):
     print(bl_info['name'] + ': Performing operation \'' + source + '\'.')
 
 
-def main(context, rename_materials=False, rename_textures=False):
+def main(context, name_type, rename_materials=False, rename_textures=False):
     filenumber_length = 2
     name_appendices = {'Base Color': 'BaseColor'}
 
@@ -87,14 +87,22 @@ def main(context, rename_materials=False, rename_textures=False):
 
     renamed_materials = []
     renamed_images = []
+    material_count = 0
     for obj in context.selected_objects:
-        material_count = 0
+        if name_type == 'OBJECT_NAME':
+            material_count = 0
         for s in obj.material_slots:
             if s.material and s.material.use_nodes:
                 print('Material name:', s.material.name)
                 print('')
+                name_root = ""
+                if name_type == 'FILENAME':
+                    name_root = bpy.path.basename(bpy.context.blend_data.filepath).replace(".blend", "")
+                    print(name_root)
+                elif name_type == 'OBJECT_NAME':
+                    name_root = obj.name
                 if rename_materials:
-                    rename_material(material=s.material, name=obj.name, filenumber=material_count)
+                    rename_material(material=s.material, name=name_root, filenumber=material_count)
                     renamed_materials.append(s.material)
                     material_count += 1
                 misc_images = []
@@ -128,7 +136,7 @@ class RenameMaterial(bpy.types.Operator):
 
     def execute(self, context):
         print_begin(self.bl_label)
-        main(context, rename_materials=True)
+        main(context, name_type='OBJECT_NAME', rename_materials=True)
         return {'FINISHED'}
 
 
@@ -143,14 +151,14 @@ class RenameTexture(bpy.types.Operator):
 
     def execute(self, context):
         print_begin(self.bl_label)
-        main(context, rename_textures=True)
+        main(context, name_type='OBJECT_NAME', rename_textures=True)
         return {'FINISHED'}
 
 
-class RenameMaterialAndTexture(bpy.types.Operator):
+class RenameMaterialAndTextureFromObjectName(bpy.types.Operator):
     """Rename materials in selected objects based on object name, then rename materials' textures based on material name"""
-    bl_idname = "file.rename_material_texture"
-    bl_label = "Rename Both Material(s) and Texture(s)"
+    bl_idname = "file.rename_material_texture_objectname"
+    bl_label = "Rename Both Material(s) and Texture(s) from Object Name"
 
     @classmethod
     def poll(cls, context):
@@ -158,7 +166,21 @@ class RenameMaterialAndTexture(bpy.types.Operator):
 
     def execute(self, context):
         print_begin(self.bl_label)
-        main(context, rename_materials=True, rename_textures=True)
+        main(context, name_type='OBJECT_NAME', rename_materials=True, rename_textures=True)
+        return {'FINISHED'}
+
+class RenameMaterialAndTextureFromFilename(bpy.types.Operator):
+    """Rename materials in selected objects based on filename, then rename materials' textures based on material name"""
+    bl_idname = "file.rename_material_texture_filename"
+    bl_label = "Rename Both Material(s) and Texture(s) from Filename"
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects is not None
+
+    def execute(self, context):
+        print_begin(self.bl_label)
+        main(context, name_type='FILENAME', rename_materials=True, rename_textures=True)
         return {'FINISHED'}
 
 
@@ -169,7 +191,8 @@ class RenameMaterialTextureMenu(bpy.types.Menu):
     def draw(self, _context):
         layout = self.layout
 
-        layout.operator(RenameMaterialAndTexture.bl_idname, text=RenameMaterialAndTexture.bl_label, icon='WORLD_DATA')
+        layout.operator(RenameMaterialAndTextureFromObjectName.bl_idname, text=RenameMaterialAndTextureFromObjectName.bl_label, icon='OBJECT_DATA')
+        layout.operator(RenameMaterialAndTextureFromFilename.bl_idname, text=RenameMaterialAndTextureFromFilename.bl_label, icon='BLENDER')
         layout.operator(RenameMaterial.bl_idname, text=RenameMaterial.bl_label, icon='MATERIAL')
         layout.operator(RenameTexture.bl_idname, text=RenameTexture.bl_label, icon='TEXTURE')
 
@@ -182,7 +205,8 @@ def menu_func_showmenu(self, _context):
 classes = (
     RenameMaterial,
     RenameTexture,
-    RenameMaterialAndTexture,
+    RenameMaterialAndTextureFromObjectName,
+    RenameMaterialAndTextureFromFilename,
     RenameMaterialTextureMenu,
 )
 
